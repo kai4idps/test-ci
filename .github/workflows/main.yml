@@ -1,25 +1,45 @@
-name: MasterDeployCI
+name: CI/CD
+
 on:
   push:
-    branches:
-      - master
+    branches: [master]
+  pull_request:
+    branches: [master]
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
-        node-version: [10.x]
+        node-version: [12.x]
+
     steps:
-      - uses: actions/checkout@v1
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
-      - name: Install Packages
+
+      - name: Install dependencies
         run: npm install
-      - name: Deploy to GH Pages
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy
         run: |
-          git config --global user.email ${{secrets.EMAIL_CI}}
-            git config --global user.name ${{secrets.NAME_CI}}
-            git remote set-url origin https://${{secrets.TOKEN_CI}}@github.com/${{secrets.NAME_CI}}/test-ci.git
-            npm run deploy
+          git config --global user.name $user_name
+          git config --global user.email $user_email
+          git remote set-url origin https://${github_token}@github.com/${repository}
+          npm run deploy
+        env:
+          user_name: "github-actions[bot]"
+          user_email: "github-actions[bot]@users.noreply.github.com"
+          github_token: ${{ secrets.SECRET }}
+          repository: ${{ github.repository }}
